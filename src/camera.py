@@ -1,4 +1,5 @@
 import cv2
+import glob
 import numpy as np
 
 
@@ -6,30 +7,40 @@ import numpy as np
     Camera class handles the calibration of the camera itself and then is used to
     create undistorted images.
 """
-class Camera
-    def __int__(self, calibration_images, checkerboard=(9,5)):
-        self.calibration_images = calibration_images
+class Camera:
+    @classmethod
+    def create(cls, image_path_matcher, checkerboard=(9,5)):
+        images = glob.glob(image_path_matcher)
 
+        raw_images = [cv2.imread(image) for image in images]
+
+        return Camera(raw_images, checkerboard)
+
+    def __init__(self, calibration_images, checkerboard):
+        self.calibration_images = calibration_images
+        self.checkerboard = checkerboard
         self.mtx = None
         self.dist = None
+
 
     def calibrate(self):
         grayscale_images = self._convert_to_grayscale()
 
-        objp = np.zeros((heckerboard[0]*checkerboard[1]*3), np.float32)
-        objp[:, :2] = np.mgrid([0:checkerboard[0], 0:checkerboard[1]].T.reshape(-1, 2)
+        objp = np.zeros((self.checkerboard[0]*self.checkerboard[1],3), np.float32)
+        objp[:, :2] = np.mgrid[0:self.checkerboard[0], 0:self.checkerboard[1]].T.reshape(-1, 2)
 
         objpoints = []
         imgpoints = []
 
         for image in grayscale_images:
-            ret, corners = cv2.findChessboardCorners(gray, checkerboard, None)
+            ret, corners = cv2.findChessboardCorners(image, self.checkerboard, None)
             if ret == True:
                 objpoints.append(objp)
                 imgpoints.append(corners)
 
 
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, grayscale_images[0][::-1], None, None)
+        image_shape = grayscale_images[0].shape
+        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_shape, None, None)
 
         self.mtx = mtx
         self.dist = dist
