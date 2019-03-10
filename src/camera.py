@@ -23,27 +23,35 @@ class Camera:
         self.dist = None
 
 
-    def calibrate(self):
-        grayscale_images = self._convert_to_grayscale()
+    def calibrate(self, load=False, save=True):
+        if load:
+            with np.load("camera_calibration.npz") as camera:
+                self.mtx = camera["mtx"]
+                self.dist = camera["dist"]
+        else:
+            grayscale_images = self._convert_to_grayscale()
 
-        objp = np.zeros((self.checkerboard[0]*self.checkerboard[1],3), np.float32)
-        objp[:, :2] = np.mgrid[0:self.checkerboard[0], 0:self.checkerboard[1]].T.reshape(-1, 2)
+            objp = np.zeros((self.checkerboard[0]*self.checkerboard[1],3), np.float32)
+            objp[:, :2] = np.mgrid[0:self.checkerboard[0], 0:self.checkerboard[1]].T.reshape(-1, 2)
 
-        objpoints = []
-        imgpoints = []
+            objpoints = []
+            imgpoints = []
 
-        for image in grayscale_images:
-            ret, corners = cv2.findChessboardCorners(image, self.checkerboard, None)
-            if ret == True:
-                objpoints.append(objp)
-                imgpoints.append(corners)
+            for image in grayscale_images:
+                ret, corners = cv2.findChessboardCorners(image, self.checkerboard, None)
+                if ret == True:
+                    objpoints.append(objp)
+                    imgpoints.append(corners)
 
 
-        image_shape = grayscale_images[0].shape
-        ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_shape, None, None)
+            image_shape = grayscale_images[0].shape
+            ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, image_shape, None, None)
 
-        self.mtx = mtx
-        self.dist = dist
+            self.mtx = mtx
+            self.dist = dist
+
+            if save:
+                np.savez("camera_calibration.npz", mtx=self.mtx, dist=self.dist)
 
 
     def undistort(self, img):

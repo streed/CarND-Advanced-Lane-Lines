@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import pickle
 
 class ImageProcessingPipeline:
 
@@ -18,7 +19,7 @@ class ImageProcessingPipeline:
     def process(self, image):
         processed_image =  self._line_pipeline(self._color_pipeline(self.camera.undistort(image)))
         warped_image = self._warp_image(processed_image)
-        return warped_image
+        return processed_image
 
     def _color_pipeline(self, image):
         hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
@@ -91,7 +92,9 @@ class ImageProcessingPipeline:
         points = np.float32(self.lane_points)
         dest_points = np.float32([(0, 0), (image.shape[0], 0), image.shape, (0, image.shape[1])])
 
-        points = points.reshape((-1, 1, 2))
+        lined = cv2.polylines(image,np.int32([points]),True,(255,255,255))
 
         M = cv2.getPerspectiveTransform(points, dest_points)
         warped = cv2.warpPerspective(image, M, image.shape)
+
+        return lined
