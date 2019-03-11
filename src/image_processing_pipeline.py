@@ -9,17 +9,18 @@ class ImageProcessingPipeline:
 
         self.color_thresh = (90, 255)
 
-        self.sobel_thresh = (10, 100)
+        self.sobel_thresh = (20, 120)
         self.sobel_kernel = 15
-        self.mag_thresh = (20, 120)
+        self.mag_thresh = (80, 200)
         self.dir_thresh = (0.5, 1.5)
 
-        self.lane_points = [(0, 0), (400, 620), (400, 720), (720, 1280)]
+        self.lane_points = np.float32([(220, 650), (560, 450), (720, 450), (1060, 650)])
+        self.lane_dest_points = np.float32([(220, 650), (60, 0), (1220, 0), (1060, 650)])
             
     def process(self, image):
         processed_image =  self._line_pipeline(self._color_pipeline(self.camera.undistort(image)))
         warped_image = self._warp_image(processed_image)
-        return processed_image
+        return warped_image
 
     def _color_pipeline(self, image):
         hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
@@ -86,15 +87,15 @@ class ImageProcessingPipeline:
 
         combined = np.zeros_like(dir_binary)
         combined[((grad_x == 1) & (grad_y == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
-        return combined
+        return grad_x
 
     def _warp_image(self, image):
-        points = np.float32(self.lane_points)
-        dest_points = np.float32([(0, 0), (image.shape[0], 0), image.shape, (0, image.shape[1])])
+        image_size = (image.shape[1], image.shape[0])
 
-        lined = cv2.polylines(image,np.int32([points]),True,(255,255,255))
-
-        M = cv2.getPerspectiveTransform(points, dest_points)
-        warped = cv2.warpPerspective(image, M, image.shape)
-
-        return lined
+        M = cv2.getPerspectiveTransform(self.lane_points, self.lane_dest_points)
+        
+        warped = cv2.warpPerspective(image,
+                                     M,
+                                     image_size,
+                                     flags=cv2.WARP_FILL_OUTLIERS + cv2.INTER_CUBIC)
+        return warped
