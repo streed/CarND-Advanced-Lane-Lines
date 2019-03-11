@@ -2,17 +2,68 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+from .lane import Lane
+
 class Road:
 
     def __init__(self):
-        self.n_windows = 9
-        self.margin = 150
+        self.n_windows = 10
+        self.sliding_margin = 100
+        self.poly_margin = 100
         self.minpix = 50
+
+        self.lane = None
 
     """
         Assume the image is warped and has been thresholded
     """
     def process(self, image):
+        if not self.lane:
+            print("No lane, finding lane!")
+            left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
+            self.lane = Lane(left_fit, right_fit)
+        else:
+            print("We have a lane...let's update it if possible")
+            left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
+            self.lane.update_fit(left_fit, right_fit)
+
+        plot_y = np.linspace(0, image.shape[0] - 1, image.shape[0])
+        left_fit_x = self.lane.left_line.project(plot_y)
+        right_fit_x = self.lane.right_line.project(plot_y)
+
+        plt.plot(left_fit_x, plot_y, color='yellow')
+        plt.plot(right_fit_x, plot_y, color='yellow')
+
+        return out_image
+
+    def find_lanes_from_existing_lanes(self, image):
+        left = self.lane.left_line
+        right = self.lane.right_line
+        nonzero = image.nonzero()
+        nonzero_x = np.array(nonzero[1])
+        nonzero_y = np.array(nonzero[0])
+
+        left_lane_inds = ((nonzerox > (left.fit[0]*nonzeroy**2 + left.fit[1]*nonzeroy + left.fit[2] - self.poly_margin)) &
+                          (nonzerox < (left.fit[0]*nonzeroy**2 + left.fit[1]*nonzeroy + left.fit[2] + margin)))
+        right_lane_inds = ((nonzerox > (right.fit[0]*nonzeroy**2 + right.fit[1]*nonzeroy + right.fit[2] - margin)) &
+                           (nonzerox < (right.fit[0]*nonzeroy**2 + right.fit[1]*nonzeroy + right.fit[2] + margin)))
+
+        left_x = nonzero_x[left_lane_inds]
+        left_y = nonzero_y[left_lane_inds]
+        right_x = nonzero_x[right_lane_inds]
+        right_y = nonzero_y[right_lane_inds]
+
+        out_image = np.dstack((image, image, image)) * 255
+        out_image[lefty, leftx] = [255, 0, 0]
+        out_image[righty, rightx] = [0, 0, 255]
+
+        left_fit = np.polyfit(lefty, leftx, 2)
+        right_fit = np.polyfit(righty, rightx, 2)
+
+        return left_fit, right_fit, out_image
+
+
+    def find_lanes_sliding_window(self, image):
         bottom_half = image[image.shape[0] // 2:, :]
         histogram = np.sum(bottom_half, axis=0)
 
@@ -40,11 +91,11 @@ class Road:
             window_y_low = image.shape[0] - (window + 1) * window_height
             window_y_high = image.shape[0] - window * window_height
             
-            window_x_left_low = left_x_current - self.margin
-            window_x_left_high = left_x_current + self.margin
+            window_x_left_low = left_x_current - self.sliding_margin
+            window_x_left_high = left_x_current + self.sliding_margin
 
-            window_x_right_low = right_x_current - self.margin
-            window_x_right_high = right_x_current + self.margin
+            window_x_right_low = right_x_current - self.sliding_margin
+            window_x_right_high = right_x_current + self.sliding_margin
 
             cv2.rectangle(out_image,
                           (window_x_left_low, window_y_low),
@@ -91,12 +142,4 @@ class Road:
         left_fit = np.polyfit(lefty, leftx, 2)
         right_fit = np.polyfit(righty, rightx, 2)
 
-        plot_y = np.linspace(0, image.shape[0] - 1, image.shape[0])
-
-        left_fit_x = left_fit[0]*plot_y**2 + left_fit[1]*plot_y + left_fit[2]
-        right_fix_x = right_fit[0]*plot_y**2 + right_fit[1]*plot_y + right_fit[2]
-        plt.plot(left_fit_x, plot_y, color='yellow')
-        plt.plot(right_fix_x, plot_y, color='yellow')
-
-
-        return  out_image
+        return  left_fit, right_fit, out_image

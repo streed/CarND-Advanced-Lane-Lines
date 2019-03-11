@@ -55,7 +55,8 @@ class Camera:
 
 
     def undistort(self, img):
-        return cv2.undistort(img, self.mtx, self.dist, None, self.mtx)
+        rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        return cv2.undistort(rgb_image, self.mtx, self.dist, None, self.mtx)
 
 
     def _convert_to_grayscale(self):

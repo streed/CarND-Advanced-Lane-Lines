@@ -16,11 +16,38 @@ class ImageProcessingPipeline:
 
         self.lane_points = np.float32([(220, 650), (560, 450), (720, 450), (1060, 650)])
         self.lane_dest_points = np.float32([(220, 650), (60, 0), (1220, 0), (1060, 650)])
+
+        self.M = cv2.getPerspectiveTransform(self.lane_points, self.lane_dest_points)
+        self.M_inv = cv2.getPerspectiveTransform(self.lane_dest_points, self.lane_points)
             
     def process(self, image):
-        processed_image =  self._line_pipeline(self._color_pipeline(self.camera.undistort(image)))
+        undistorted = self.camera.undistort(image)
+        processed_image =  self._line_pipeline(self._color_pipeline(undistorted))
         warped_image = self._warp_image(processed_image)
-        return warped_image
+        return warped_image, undistorted
+
+    def project_lane(self, image, warped, lane):
+        warp_zeros = np.zeros_like(warped)
+        color_warped = np.dstack((warp_zeros, warp_zeros, warp_zeros))
+
+        plot_y = np.linspace(0, warped.shape[0] - 1, warped.shape[0])
+
+        left_fit_x = lane.left_line.project(plot_y)
+        right_fit_x = lane.right_line.project(plot_y)
+
+        pts_left = np.vstack((left_fit_x, plot_y)).astype(np.int32).T
+        pts_right = np.vstack((right_fit_x, plot_y)).astype(np.int32).T
+
+        cv2.polylines(color_warped, [pts_left], False, (0, 255, 0), 20)
+        cv2.polylines(color_warped, [pts_right], False, (0, 255, 0), 20)
+
+        de_warped = cv2.warpPerspective(color_warped, self.M_inv, (image.shape[1], image.shape[0]))
+
+        result = cv2.addWeighted(image, 1, de_warped, 1, 0)
+
+        return result
+
+
 
     def _color_pipeline(self, image):
         hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
@@ -92,10 +119,8 @@ class ImageProcessingPipeline:
     def _warp_image(self, image):
         image_size = (image.shape[1], image.shape[0])
 
-        M = cv2.getPerspectiveTransform(self.lane_points, self.lane_dest_points)
-        
         warped = cv2.warpPerspective(image,
-                                     M,
+                                     self.M,
                                      image_size,
                                      flags=cv2.WARP_FILL_OUTLIERS + cv2.INTER_CUBIC)
         return warped
