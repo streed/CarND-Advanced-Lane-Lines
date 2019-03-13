@@ -19,20 +19,16 @@ class Road:
     """
     def process(self, image):
         if not self.lane:
-            print("No lane, finding lane!")
             left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
             self.lane = Lane(left_fit, right_fit)
         else:
-            print("We have a lane...let's update it if possible")
             left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
-            self.lane.update_fit(left_fit, right_fit)
-
-        plot_y = np.linspace(0, image.shape[0] - 1, image.shape[0])
-        left_fit_x = self.lane.left_line.project(plot_y)
-        right_fit_x = self.lane.right_line.project(plot_y)
-
-        plt.plot(left_fit_x, plot_y, color='yellow')
-        plt.plot(right_fit_x, plot_y, color='yellow')
+            if self.lane.validate_new_fit(left_fit, right_fit):
+                self.lane.update_fit(left_fit, right_fit)
+            else:
+                print("Bad last line detection....doing sliding window check")
+                left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
+                self.lane.update_fit(left_fit, right_fit)
 
         return out_image
 
@@ -139,7 +135,14 @@ class Road:
         out_image[lefty, leftx] = [255, 0, 0]
         out_image[righty, rightx] = [0, 0, 255]
 
-        left_fit = np.polyfit(lefty, leftx, 2)
-        right_fit = np.polyfit(righty, rightx, 2)
+        if len(leftx) > 0:
+            left_fit = np.polyfit(lefty, leftx, 2)
+        else:
+            left_fit = [False, False, False]
+
+        if len(rightx) > 0:
+            right_fit = np.polyfit(righty, rightx, 2)
+        else:
+            right_fit = [False, False, False]
 
         return  left_fit, right_fit, out_image

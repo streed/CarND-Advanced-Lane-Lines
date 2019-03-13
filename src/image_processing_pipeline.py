@@ -7,22 +7,39 @@ class ImageProcessingPipeline:
     def __init__(self, camera):
         self.camera = camera
 
-        self.color_thresh = (90, 255)
+        self.color_thresh = (30, 255)
+        self.yellow_thresh = (0, 255)
+        self.white_thresh = (0, 255)
 
         self.sobel_thresh = (20, 120)
         self.sobel_kernel = 15
         self.mag_thresh = (80, 200)
         self.dir_thresh = (0.5, 1.5)
 
-        self.lane_points = np.float32([(220, 650), (560, 450), (720, 450), (1060, 650)])
-        self.lane_dest_points = np.float32([(220, 650), (60, 0), (1220, 0), (1060, 650)])
+        self.yellow_lower = [15, 100, 0]
+        self.yellow_upper = [50, 220, 255]
 
-        self.M = cv2.getPerspectiveTransform(self.lane_points, self.lane_dest_points)
-        self.M_inv = cv2.getPerspectiveTransform(self.lane_dest_points, self.lane_points)
+        self.white_lower = [0, 200, 0]
+        self.white_upper = [255, 255, 255]
+
+        self.lane_points = np.float32([(220, 650),
+                                       (560, 450),
+                                       (720, 450),
+                                       (1060, 650)])
+        self.lane_dest_points = np.float32([(220, 650),
+                                            (60, 0),
+                                            (1220, 0),
+                                            (1060, 650)])
+
+        self.M = cv2.getPerspectiveTransform(self.lane_points,
+                                             self.lane_dest_points)
+        self.M_inv = cv2.getPerspectiveTransform(self.lane_dest_points,
+                                                 self.lane_points)
             
     def process(self, image):
         undistorted = self.camera.undistort(image)
-        processed_image =  self._line_pipeline(self._color_pipeline(undistorted))
+        color_image = self._color_pipeline(undistorted)
+        processed_image =  self._line_pipeline(color_image)
         warped_image = self._warp_image(processed_image)
         return warped_image, undistorted
 
@@ -38,25 +55,56 @@ class ImageProcessingPipeline:
         pts_left = np.vstack((left_fit_x, plot_y)).astype(np.int32).T
         pts_right = np.vstack((right_fit_x, plot_y)).astype(np.int32).T
 
-        cv2.polylines(color_warped, [pts_left], False, (0, 255, 0), 20)
-        cv2.polylines(color_warped, [pts_right], False, (0, 255, 0), 20)
+
+        cv2.polylines(color_warped, [pts_left], False, (255, 0, 0), 50)
+        cv2.polylines(color_warped, [pts_right], False, (0, 0, 255), 50)
 
         de_warped = cv2.warpPerspective(color_warped, self.M_inv, (image.shape[1], image.shape[0]))
 
-        result = cv2.addWeighted(image, 1, de_warped, 1, 0)
+        result = cv2.addWeighted(image, 1, de_warped, 2, 0)
+
+        cv2.putText(result,
+                    "Curvature: {0:.2f}m".format(lane.curvature()),
+                    (100, 100),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA)
+
+        cv2.putText(result,
+                    "Center Offset: {0:.2f}m".format(lane.center_offset()),
+                    (100, 150),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA)
+
+        cv2.putText(result,
+                    "Lane Line Distance: {0:.2f}m".format(lane.lane_line_distance()),
+                    (100, 200),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    1,
+                    (255, 255, 255),
+                    2,
+                    cv2.LINE_AA)
 
         return result
 
 
 
     def _color_pipeline(self, image):
+        hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
         hls = cv2.cvtColor(image, cv2.COLOR_RGB2HLS)
 
-        S = hls[:, :, 2] 
+        out = cv2.inRange(hsv, np.array(self.yellow_lower), np.array(self.yellow_upper))
+        yellow = cv2.bitwise_and(image, image, mask=out)
+        
+        out = cv2.inRange(hls, np.array(self.white_lower), np.array(self.white_upper))
+        white = cv2.bitwise_and(image, image, mask=out)
 
-        binary_mask = np.zeros_like(S)
-        binary_mask[(S > self.color_thresh[0]) & (S <= self.color_thresh[1])] = 1
-        return cv2.bitwise_and(image, image, mask = binary_mask)
+        return cv2.bitwise_or(yellow, white)
 
     def _line_pipeline(self, image):
         return self._combine(image)

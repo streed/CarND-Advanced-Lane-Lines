@@ -54,9 +54,8 @@ class Camera:
                 np.savez("camera_calibration.npz", mtx=self.mtx, dist=self.dist)
 
 
-    def undistort(self, img):
-        rgb_image = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        return cv2.undistort(rgb_image, self.mtx, self.dist, None, self.mtx)
+    def undistort(self, image):
+        return cv2.undistort(image, self.mtx, self.dist, None, self.mtx)
 
 
     def _convert_to_grayscale(self):
