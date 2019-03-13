@@ -9,7 +9,7 @@ import numpy as np
 """
 class Camera:
     @classmethod
-    def create(cls, image_path_matcher, checkerboard=(9,5)):
+    def create(cls, image_path_matcher, checkerboard=(9,6)):
         images = glob.glob(image_path_matcher)
 
         raw_images = [cv2.imread(image) for image in images]

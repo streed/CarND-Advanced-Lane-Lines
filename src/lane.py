@@ -7,15 +7,26 @@ xm_per_pix = 3.7/676 # The lane lines are roughly 3.7m apart of 700 pixels apart
 class LaneLine:
     def __init__(self, fit_x):
         self.fits = [fit_x]
+        self.diffs = [[0, 0, 0]]
 
     def update_fit(self, fit):
         self.fits.append(fit)
+        if len(self.diffs) > 0:
+            self.diffs.append(np.subtract(self.diff, fit))
+        else:
+            self.diffs.append(np.array([0, 0, 0]))
+
         if len(self.fits) > MAX_HISTORY:
             self.fits = self.fits[-MAX_HISTORY:]
+            self.diffs = self.diffs[-MAX_HISTORY:]
 
     @property
     def fit(self):
         return np.mean(self.fits, axis=0)
+
+    @property
+    def diff(self):
+        return np.mean(self.diffs, axis=0)
 
 
     def project(self, plot_y):
@@ -56,11 +67,17 @@ class Lane:
             self.right_line.update_fit(fit_x)
 
     def center_offset(self):
-        left_base_x = self.left_line.base_x()
+        left_fit_x = self.left_line.fit
+        right_fit_x = self.right_line.fit
 
-        offset = ((1280/2)*xm_per_pix) - left_base_x
+        mid_fit_x = np.mean([left_fit_x, right_fit_x], axis=0)
 
-        return offset * xm_per_pix
+        mid_lane = LaneLine(mid_fit_x)
+        mid_x = mid_lane.project(720)*xm_per_pix
+
+        offset = ((1280/2)*xm_per_pix) - mid_x
+
+        return offset
 
     def lane_line_distance(self):
         return self._lane_line_distance(self.left_line, self.right_line)

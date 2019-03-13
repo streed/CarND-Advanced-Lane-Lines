@@ -26,7 +26,6 @@ class Road:
             if self.lane.validate_new_fit(left_fit, right_fit):
                 self.lane.update_fit(left_fit, right_fit)
             else:
-                print("Bad last line detection....doing sliding window check")
                 left_fit, right_fit, out_image = self.find_lanes_sliding_window(image)
                 self.lane.update_fit(left_fit, right_fit)
 
@@ -39,10 +38,10 @@ class Road:
         nonzero_x = np.array(nonzero[1])
         nonzero_y = np.array(nonzero[0])
 
-        left_lane_inds = ((nonzerox > (left.fit[0]*nonzeroy**2 + left.fit[1]*nonzeroy + left.fit[2] - self.poly_margin)) &
-                          (nonzerox < (left.fit[0]*nonzeroy**2 + left.fit[1]*nonzeroy + left.fit[2] + margin)))
-        right_lane_inds = ((nonzerox > (right.fit[0]*nonzeroy**2 + right.fit[1]*nonzeroy + right.fit[2] - margin)) &
-                           (nonzerox < (right.fit[0]*nonzeroy**2 + right.fit[1]*nonzeroy + right.fit[2] + margin)))
+        left_lane_inds = ((nonzerox > (left.project(nonzeroy) - self.poly_margin)) &
+                          (nonzerox < (left.project(nonzeroy) + self.poly_margin)))
+        right_lane_inds = ((nonzerox > (right.project(nonzeroy) - self.poly_margin)) &
+                           (nonzerox < (right.project(nonzeroy) + self.poly_margin)))
 
         left_x = nonzero_x[left_lane_inds]
         left_y = nonzero_y[left_lane_inds]

@@ -55,6 +55,10 @@ class ImageProcessingPipeline:
         pts_left = np.vstack((left_fit_x, plot_y)).astype(np.int32).T
         pts_right = np.vstack((right_fit_x, plot_y)).astype(np.int32).T
 
+        pts = np.vstack((np.mean([left_fit_x, right_fit_x], axis=0), plot_y)).astype(np.int32).T
+
+        cv2.polylines(color_warped, [pts], False, (0, 255, 0), 10)
+
 
         cv2.polylines(color_warped, [pts_left], False, (255, 0, 0), 50)
         cv2.polylines(color_warped, [pts_right], False, (0, 0, 255), 50)
