@@ -19,24 +19,19 @@ The goals / steps of this project are the following:
 
 [//]: # (Image References)
 
-[image1]: ./examples/undistort_output.png "Undistorted"
-[image2]: ./test_images/test1.jpg "Road Transformed"
-[image3]: ./examples/binary_combo_example.jpg "Binary Example"
-[image4]: ./examples/warped_straight_lines.jpg "Warp Example"
-[image5]: ./examples/color_fit_lines.jpg "Fit Visual"
-[image6]: ./examples/example_output.jpg "Output"
-[video1]: ./project_video.mp4 "Video"
-
 [distorted_undistorted] ./output_images/distorted_undistorted.png "Distorted and Undistorted"
-[checkerboard] ./output_images/checkerboard.png" "Checkerboard"
-[output_example] ./output_images/output_example.png "Output example"
-[polynomial] ./output_images/polynomial.png "Polynomial"
-[sliding_window] ./output_images/sliding_window.png "Sliding Window"
-[thresholded_warped] ./output_images/thresholded_warped.png "Thresholded Warped"
-[white_mask] ./output_images/white_mask.png "White Mask"
-[yellow_mask] ./output_images/yellow_mask.png "Yellow Mask"
-[color_mask] ./output_images/color_mask.png "Color Mask"
-[combined_thresholds] ./output_images/combined_thresholds.png "Combined Thresholds"
+[checkerboard]: ./output_images/checkerboard.png" "Checkerboard"
+[output_example]: ./output_images/output_example.png "Output example"
+[polynomial]: ./output_images/polynomial.png "Polynomial"
+[sliding_window]: ./output_images/sliding_window.png "Sliding Window"
+[thresholded_warped]: ./output_images/thresholded_warped.png "Thresholded Warped"
+[white_mask]: ./output_images/white_mask.png "White Mask"
+[yellow_mask]: ./output_images/yellow_mask.png "Yellow Mask"
+[color_mask]: ./output_images/color_mask.png "Color Mask"
+[combined_thresholds]: ./output_images/combined_thresholds.png "Combined Thresholds"
+[before_warp]: ./output_images/before_warp.png "Before Warp"
+[warped_image]: ./output_images/warped_image.png "Warped Image"
+[video]: ./output_movie/project_video.mp4
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/571/view) Points
 
@@ -52,13 +47,9 @@ You're reading it!
 
 #### 1. Briefly state how you computed the camera matrix and distortion coefficients. Provide an example of a distortion corrected calibration image.
 
-To calibrate the camera I wrote a Camera class located in "./src/camera.py". This class does the following things. It lets you
-use the factory method to create a raw camera that has access to the set of calibration images used to calibrate this camera.
+To calibrate the camera I wrote a Camera class located in "./src/camera.py". This class does the following things. It lets you use the factory method to create a raw camera that has access to the set of calibration images used to calibrate this camera.
 
-After the camera is created with the calibration images the camera is calibrated. In this project we used a 9x6 checkerboard
-pattern. During the calibration steps I mapped where the points should be in object space and then found the corrosponding
-checkerboard points in image space. Then after using all of the passed in camera calibration images I was able to produce the
-calibration matrix and coefficients. 
+After the camera is created with the calibration images the camera is calibrated. In this project we used a 9x6 checkerboard pattern. During the calibration steps I mapped where the points should be in object space and then found the corrosponding checkerboard points in image space. Then after using all of the passed in camera calibration images I was able to produce the calibration matrix and coefficients. 
 
 Once the camera is calibrated if the parameter to save the matrix and coefficients is `True` then they are saved into a pickle file called "camera_calibration.npz", this greatly sped up my work as you should only have to do this once for a new camera.
 
@@ -102,47 +93,40 @@ Combined Color Mask:
 
 ![alt_text][color_mask]
 
+Once this was completed I used the ideas from the `Advanced Computer Vision` lab to use the absolute sobel, magnitude thresholding, and direction thresholding.
+
 Combined Abolsute Sobel, Magnitude, Direction thresholds:
 
 ![alt_text][combined_thresholds]
 
-Once this was completed I used the ideas from the `Advanced Computer Vision` lab to use the absolute sobel, magnitude thresholding, and direction thresholding.
+Both filtering and thresholding is below:
+
+![alt_text][before_warp]
 
 #### 3. Describe how (and identify where in your code) you performed a perspective transform and provide an example of a transformed image.
 
-The code for my perspective transform includes a function called `warper()`, which appears in lines 1 through 8 in the file `example.py` (output_images/examples/example.py) (or, for example, in the 3rd code cell of the IPython notebook).  The `warper()` function takes as inputs an image (`img`), as well as source (`src`) and destination (`dst`) points.  I chose the hardcode the source and destination points in the following manner:
+Through experimentation I was able to find a reasonable bounding box that when warped gave parallel lines and gave a large enough area to examine tighter turns. The source and destination points are hard coded in `ImageProcessingPipeline` from lines 25 through 32.
 
-```python
-src = np.float32(
-    [[(img_size[0] / 2) - 55, img_size[1] / 2 + 100],
-    [((img_size[0] / 6) - 10), img_size[1]],
-    [(img_size[0] * 5 / 6) + 60, img_size[1]],
-    [(img_size[0] / 2 + 55), img_size[1] / 2 + 100]])
-dst = np.float32(
-    [[(img_size[0] / 4), 0],
-    [(img_size[0] / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), img_size[1]],
-    [(img_size[0] * 3 / 4), 0]])
-```
+The image below shows the unwarped box and the second image shows the first image warped:
 
-This resulted in the following source and destination points:
+![alt_text][warped_image]
 
-| Source        | Destination   | 
-|:-------------:|:-------------:| 
-| 585, 460      | 320, 0        | 
-| 203, 720      | 320, 720      |
-| 1127, 720     | 960, 720      |
-| 695, 460      | 960, 0        |
-
-I verified that my perspective transform was working as expected by drawing the `src` and `dst` points onto a test image and its warped counterpart to verify that the lines appear parallel in the warped image.
-
-![alt text][image4]
 
 #### 4. Describe how (and identify where in your code) you identified lane-line pixels and fit their positions with a polynomial?
 
-Then I did some other stuff and fit my lane lines with a 2nd order polynomial kinda like this:
+For finding the actual pixels I used two methods. The first method was the sliding window method as described in the lab. The second method was using the previously found polynomial and building up a bounding area surrounding the polynomial. 
 
-![alt text][image5]
+How the process works is contained in the `Road` class in `./src/road.py`. When the first image comes in we do not know of a lane and we proceed with the sliding window method. Once we find the lane lines we instantiate a `Lane` object. This will hold the polynomial and various other information of the left and right lane lines.
+
+The image below shows the sliding window method running:
+
+![alt_text][sliding_window]
+
+After this is successful or it gives us a reasonable acceptable result we then use the polynomial masking method from lines 34 through 77 in `./src/road.py`. 
+
+The image below shows the polynomial window method running:
+
+![alt_text][polynomial]
 
 #### 5. Describe how (and identify where in your code) you calculated the radius of curvature of the lane and the position of the vehicle with respect to center.
 
@@ -150,9 +134,11 @@ I did this in lines # through # in my code in `my_other_file.py`
 
 #### 6. Provide an example image of your result plotted back down onto the road such that the lane area is identified clearly.
 
-I implemented this step in lines # through # in my code in `yet_another_file.py` in the function `map_lane()`.  Here is an example of my result on a test image:
+The lane lines are warped back down onto the original image in `ImageProcessingPipeline` on likes 47 through 64.
 
-![alt text][image6]
+The image below shows the result of this method:
+
+![alt_text][output_example]
 
 ---
 
@@ -160,7 +146,11 @@ I implemented this step in lines # through # in my code in `yet_another_file.py`
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
-Here's a [link to my video result](./project_video.mp4)
+Here's a link to the video [Youtube Link](https://www.youtube.com/watch?v=hfM-DkZHoPM)
+
+Video file:
+
+![alt_text][video]
 
 ---
 
@@ -168,4 +158,6 @@ Here's a [link to my video result](./project_video.mp4)
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+The one issue that my implementation faces on the project_video and the challenge video are the areas with low contrast with the lane lines. For example in the project_video the road right on the bridge gave me the most trouble because the image gets washed out. I experimented with trying to even out the image by leveling the histogram, but I couldn't get it to work. Another way to improve the process would be having multiple sets of thresholds for differing lightness levels of the images, this would make the rest of the image processing better.
+
+The other area it fails in, especially in the harder challenge video, are very tight turns. My algorithm loses the lanes completely. Along with the constant changing of light and dark throws off all of my threshholds and the lane lines go through trees rather than on the road.

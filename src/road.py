@@ -60,7 +60,6 @@ class Road:
             left_fit_x = left_fit[0]*plot_y**2 + left_fit[1]*plot_y + left_fit[2]
             right_fit_x = right_fit[0]*plot_y**2 + right_fit[1]*plot_y + right_fit[2]
 
-
             left_line_window1 = np.array([np.transpose(np.vstack([left_fit_x-self.poly_margin, plot_y]))])
             left_line_window2 = np.array([np.flipud(np.transpose(np.vstack([left_fit_x+self.poly_margin,plot_y])))])
             left_line_pts = np.hstack((left_line_window1, left_line_window2))
