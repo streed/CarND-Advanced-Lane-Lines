@@ -64,8 +64,7 @@ class ImageProcessingPipeline:
         cv2.polylines(color_warped, [pts_right], False, (0, 0, 255), 50)
 
         de_warped = cv2.warpPerspective(color_warped, self.M_inv, (image.shape[1], image.shape[0]))
-
-        result = cv2.addWeighted(image, 1, de_warped, 2, 0)
+        result = cv2.addWeighted(np.array(image), 1, np.array(de_warped), 2, 0)
 
         cv2.putText(result,
                     "Curvature: {0:.2f}m".format(lane.curvature()),
@@ -164,9 +163,9 @@ class ImageProcessingPipeline:
         mag_binary = self._mag_thresh(image)
         dir_binary = self._dir_thresh(image)
 
-        combined = np.zeros_like(dir_binary)
+        combined = np.zeros_like(grad_x)
         combined[((grad_x == 1) & (grad_y == 1)) | ((mag_binary == 1) & (dir_binary == 1))] = 1
-        return grad_x
+        return combined
 
     def _warp_image(self, image):
         image_size = (image.shape[1], image.shape[0])
