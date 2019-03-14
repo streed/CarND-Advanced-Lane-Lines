@@ -1,9 +1,3 @@
-## Writeup Template
-
-### You can use this file as a template for your writeup if you want to submit it as a markdown file, but feel free to use some other method and submit a pdf if you prefer.
-
----
-
 **Advanced Lane Finding Project**
 
 The goals / steps of this project are the following:
@@ -17,10 +11,8 @@ The goals / steps of this project are the following:
 * Warp the detected lane boundaries back onto the original image.
 * Output visual display of the lane boundaries and numerical estimation of lane curvature and vehicle position.
 
-[//]: # (Image References)
-
-[distorted_undistorted] ./output_images/distorted_undistorted.png "Distorted and Undistorted"
-[checkerboard]: ./output_images/checkerboard.png" "Checkerboard"
+[distorted_undistorted]: ./output_images/distorted_undistorted.png "Distorted and Undistorted"
+[checkerboard]: ./output_images/checkerboard.png "Checkerboard"
 [output_example]: ./output_images/output_example.png "Output example"
 [polynomial]: ./output_images/polynomial.png "Polynomial"
 [sliding_window]: ./output_images/sliding_window.png "Sliding Window"
@@ -147,10 +139,6 @@ The image below shows the result of this method:
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (wobbly lines are ok but no catastrophic failures that would cause the car to drive off the road!).
 
 Here's a link to the video [Youtube Link](https://www.youtube.com/watch?v=hfM-DkZHoPM)
-
-Video file:
-
-![alt_text][video]
 
 ---
 
